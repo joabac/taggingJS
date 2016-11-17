@@ -69,6 +69,9 @@
             "forbidden-chars-text": "Forbidden character:", // Basic text passed to forbidden-chars callback
             "forbidden-words": [],                          // Array of forbidden words
             "forbidden-words-callback": window.alert,       // Function to call when there is a forbidden words
+            "before-insert-callback": null,                 // Function to call before the insertion of the tag
+            "validation-error-callback":window.alert,       // Function to cal if the validation fails
+            "validation-text": "Error: ",                   // Basic text passed to validation-text error-callback
             "forbidden-words-text": "Forbidden word:",      // Basic text passed to forbidden-words callback
             "no-backspace": false,                          // Backspace key remove last tag, true to avoid that
             "no-comma": false,                              // Comma "," key add a new tag, true to avoid that
@@ -96,7 +99,7 @@
         add: function( text ) {
 
             // console.log( 'add' );
-
+                
             var $tag, l, self,
                 index, forbidden_words,
                 callback_f, callback_t;
@@ -172,6 +175,19 @@
                         return self.throwError( callback_f, callback_t, text );
 
                     }
+                }
+            }
+            
+            before_insert =  self.config[ "before-insert-callback" ];
+            temp_validation_callback  =  self.config[ "validation-error-callback"];
+            if( before_insert !== null )
+            {
+                var resultado = before_insert(text);
+                if(resultado !== true)
+                {
+                    self.emptyInput();
+                    var validation_txt  =  self.config[ "validation-text"];
+                    return self.throwError(temp_validation_callback,validation_txt + text,resultado);
                 }
             }
 
@@ -420,12 +436,12 @@
                 var key, index, l, pressed_key, all_keys,
                     forbidden_chars, actual_text,
                     callback_f, callback_t;
-
+                
                 all_keys = self.getSpecialKeys();
-
+                
                 // Forbidden Chars shortcut
                 forbidden_chars = self.config[ "forbidden-chars" ];
-
+                
                 // Actual text in the type_zone
                 actual_text     = self.valInput();
 
@@ -443,6 +459,7 @@
                         if ( pressed_key === all_keys[ key ] ) {
 
                             // Enter or comma or spacebar - We cannot add an empty tag
+                            
                             if ( self.keys.add[ key ] /*!= null*/ ) {
 
                                 // Prevent Default
@@ -470,6 +487,7 @@
                 } else {
 
                     // For loop to remove Forbidden Chars from Text
+                                        
                     l = forbidden_chars.length;
                     while ( l-- ) {
 
@@ -481,7 +499,7 @@
 
                             // Prevent Default
                             e.preventDefault();
-
+                            
                             // Removing Forbidden Char
                             actual_text = actual_text.replace( forbidden_chars[ l ], "" );
 
@@ -496,6 +514,7 @@
                             // Remove the duplicate
                             return self.throwError( callback_f, callback_t, forbidden_chars[ l ] );
                         }
+                        
                     }
 
                     // For in to look in Add Keys
@@ -631,13 +650,22 @@
             }
 
             // Getting text if not alredy setted
-            text = text || $tag.pure_text;
+            if($tag !== undefined)
+            {    
+                text = text || $tag.pure_text;
+                // Removing last tag
+                $tag.remove();
+            }
+            else
+            {
+                text = text;
+            }
 
-            // Removing last tag
-            $tag.remove();
+            
+            
 
             // If you want to change the text when a tag is deleted
-            if ( self.config[ "edit-on-delete" ] ) {
+            if ( self.config[ "edit-on-delete" ] && $tag !== undefined) {
 
                 // Empting input
                 self.emptyInput();
